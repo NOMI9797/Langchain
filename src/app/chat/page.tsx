@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import ChatMessage from '@/components/ChatMessage';
 import ChatInput from '@/components/ChatInput';
 import { formatDate } from '@/utils/helpers';
+import { FaTrash, FaPen } from 'react-icons/fa';
 
 interface Message {
   content: string;
@@ -16,6 +17,7 @@ interface Conversation {
   updatedAt: string;
   createdAt: string;
   preview?: string;
+  assistantPreview?: string;
 }
 
 export default function ChatPage() {
@@ -122,6 +124,30 @@ export default function ChatPage() {
     setActiveConversation(null);
   };
 
+  // Add delete and rename handlers
+  const handleDeleteConversation = async (conversationId: string) => {
+    // Optimistically remove from UI
+    setHistory(prev => prev.filter(c => c.conversationId !== conversationId));
+    if (activeConversation === conversationId) {
+      setMessages([]);
+      setActiveConversation(null);
+    }
+    await fetch(`/api/history?conversationId=${conversationId}`, { method: 'DELETE' });
+    fetchHistory();
+  };
+
+  const handleRenameConversation = async (conversationId: string, currentPreview: string) => {
+    const newTitle = prompt('Enter a new title for this conversation:', currentPreview || '');
+    if (newTitle && newTitle.trim()) {
+      await fetch(`/api/history?conversationId=${conversationId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ preview: newTitle.trim() }),
+      });
+      fetchHistory();
+    }
+  };
+
   return (
     <div className="min-h-screen w-full flex bg-gradient-to-br from-blue-50 via-white to-purple-100">
       {/* Sidebar */}
@@ -146,17 +172,50 @@ export default function ChatPage() {
               <div className="text-zinc-400 px-4 py-2">No conversations yet.</div>
             )}
             {history.map((chat) => (
-              <button
-                key={chat.conversationId}
-                className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors text-sm mb-1 ${
-                  activeConversation === chat.conversationId
-                    ? 'bg-zinc-700 text-white shadow'
-                    : 'bg-transparent text-zinc-300 hover:bg-zinc-800 hover:text-white'
-                }`}
-                onClick={() => fetchMessages(chat.conversationId)}
-              >
-                {chat.preview ? (chat.preview.length > 40 ? chat.preview.slice(0, 40) + '…' : chat.preview) : 'New Chat'}
-              </button>
+              <div key={chat.conversationId} className="flex items-center group">
+                <button
+                  className={`flex-1 text-left px-4 py-3 rounded-lg font-medium transition-colors text-sm mb-1 flex flex-col items-start gap-1 overflow-hidden ${
+                    activeConversation === chat.conversationId
+                      ? 'bg-zinc-700 text-white shadow'
+                      : 'bg-transparent text-zinc-300 hover:bg-zinc-800 hover:text-white'
+                  }`}
+                  onClick={() => fetchMessages(chat.conversationId)}
+                >
+                  <div className="flex items-center gap-2 w-full">
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 flex items-center justify-center text-white text-xs font-bold shadow">
+                      🤖
+                    </div>
+                    <span className="truncate w-36 font-semibold">
+                      {chat.preview ? (chat.preview.length > 32 ? chat.preview.slice(0, 32) + '…' : chat.preview) : 'New Chat'}
+                    </span>
+                  </div>
+                  {chat.assistantPreview && (
+                    <span className="truncate w-44 text-xs text-zinc-400">
+                      {chat.assistantPreview.length > 44 ? chat.assistantPreview.slice(0, 44) + '…' : chat.assistantPreview}
+                    </span>
+                  )}
+                </button>
+                <button
+                  className="ml-1 p-1 text-zinc-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"
+                  title="Delete"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteConversation(chat.conversationId);
+                  }}
+                >
+                  <FaTrash size={13} />
+                </button>
+                <button
+                  className="ml-1 p-1 text-zinc-400 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"
+                  title="Rename"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRenameConversation(chat.conversationId, chat.preview || '');
+                  }}
+                >
+                  <FaPen size={13} />
+                </button>
+              </div>
             ))}
           </div>
         </div>

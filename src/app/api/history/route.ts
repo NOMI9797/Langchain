@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getConversations, getConversationMessages } from '@/lib/db/chatHistory';
+import { getDb } from '@/lib/db/mongodb';
 
 export async function GET(request: Request) {
   try {
@@ -18,4 +19,31 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
+}
+
+export async function DELETE(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const conversationId = searchParams.get('conversationId');
+  if (!conversationId) {
+    return NextResponse.json({ error: 'Missing conversationId' }, { status: 400 });
+  }
+  const db = await getDb();
+  await db.collection('chat_conversations').deleteOne({ conversationId });
+  return NextResponse.json({ success: true });
+}
+
+export async function PATCH(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const conversationId = searchParams.get('conversationId');
+  if (!conversationId) {
+    return NextResponse.json({ error: 'Missing conversationId' }, { status: 400 });
+  }
+  const { preview } = await request.json();
+  const db = await getDb();
+  // Update the preview (first user message)
+  await db.collection('chat_conversations').updateOne(
+    { conversationId, 'messages.0.role': 'user' },
+    { $set: { 'messages.0.content': preview } }
+  );
+  return NextResponse.json({ success: true });
 } 

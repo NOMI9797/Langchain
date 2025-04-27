@@ -14,6 +14,7 @@ export interface ChatConversation {
   createdAt: Date;
   updatedAt: Date;
   preview?: string;
+  assistantPreview?: string;
 }
 
 const COLLECTION = 'chat_conversations';
@@ -36,15 +37,17 @@ export async function getConversations() {
   const db = await getDb();
   // Get conversations and their first user message as preview
   const conversations = await db.collection<ChatConversation>(COLLECTION)
-    .find({}, { projection: { messages: { $slice: 1 }, conversationId: 1, createdAt: 1, updatedAt: 1 } })
+    .find({}, { projection: { messages: { $slice: 2 }, conversationId: 1, createdAt: 1, updatedAt: 1 } })
     .sort({ updatedAt: -1 })
     .toArray();
-  // Add preview field
+  // Add preview fields
   return conversations.map(convo => {
     const firstMsg = convo.messages?.[0];
+    const firstAssistant = convo.messages?.find(m => m.role === 'assistant');
     return {
       ...convo,
       preview: firstMsg && firstMsg.role === 'user' ? firstMsg.content : 'New Chat',
+      assistantPreview: firstAssistant ? firstAssistant.content : '',
     };
   });
 }
