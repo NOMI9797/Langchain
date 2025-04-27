@@ -31,8 +31,8 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-3">
-      <div className="flex gap-2 items-end bg-white rounded-xl shadow-md px-3 py-2 border border-gray-200">
+    <form onSubmit={handleSubmit} className="">
+      <div className="flex gap-2 items-end bg-white/60 backdrop-blur-xl rounded-2xl shadow-xl px-5 py-4 border border-white/40 focus-within:ring-2 focus-within:ring-blue-400 transition-all">
         <div className="flex-1 relative">
           <textarea
             suppressHydrationWarning
@@ -41,13 +41,14 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend }) => {
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Type your message..."
-            className="w-full p-3 pr-12 border-none outline-none bg-transparent resize-none min-h-[44px] max-h-32 text-base"
+            className="w-full p-3 pr-16 border-none outline-none bg-transparent resize-none min-h-[44px] max-h-32 text-base rounded-xl focus:ring-0 font-sans text-gray-900 placeholder-gray-400 placeholder:font-medium"
             rows={1}
           />
           <button
             type="submit"
             disabled={!message.trim()}
-            className="absolute right-2 bottom-2 p-2 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-white shadow-md hover:scale-105 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
+            className="absolute right-2 bottom-2 p-2 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-white shadow-xl hover:scale-110 hover:ring-2 hover:ring-blue-300 focus:ring-2 focus:ring-blue-400 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-2 border-white/60"
+            aria-label="Send message"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
