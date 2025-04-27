@@ -29,6 +29,28 @@ export default function ChatPage() {
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [activeConversation, setActiveConversation] = useState<string | null>(null);
 
+  // Add URL handling for conversation persistence
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const conversationId = params.get('conversation');
+    if (conversationId) {
+      fetchMessages(conversationId);
+    }
+  }, []);
+
+  // Update URL when conversation changes
+  useEffect(() => {
+    if (activeConversation) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('conversation', activeConversation);
+      window.history.replaceState({}, '', url.toString());
+    } else {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('conversation');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [activeConversation]);
+
   // Fetch chat history
   const fetchHistory = async () => {
     setHistoryLoading(true);
@@ -122,6 +144,10 @@ export default function ChatPage() {
   const handleNewChat = () => {
     setMessages([]);
     setActiveConversation(null);
+    // Clear the URL parameters
+    const url = new URL(window.location.href);
+    url.searchParams.delete('conversation');
+    window.history.replaceState({}, '', url.toString());
   };
 
   // Add delete and rename handlers
