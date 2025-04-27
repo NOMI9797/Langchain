@@ -15,6 +15,7 @@ interface Conversation {
   conversationId: string;
   updatedAt: string;
   createdAt: string;
+  preview?: string;
 }
 
 export default function ChatPage() {
@@ -154,7 +155,7 @@ export default function ChatPage() {
                 }`}
                 onClick={() => fetchMessages(chat.conversationId)}
               >
-                {formatDate(new Date(chat.updatedAt))}
+                {chat.preview ? (chat.preview.length > 40 ? chat.preview.slice(0, 40) + '…' : chat.preview) : 'New Chat'}
               </button>
             ))}
           </div>
