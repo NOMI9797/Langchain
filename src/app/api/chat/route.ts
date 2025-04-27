@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { chain } from '@/lib/langchain/chain';
-import { HumanMessage, AIMessage } from 'langchain/schema';
+import { HumanMessage, AIMessage } from '@langchain/core/messages';
 import { saveMessage } from '@/lib/db/chatHistory';
 import { v4 as uuidv4 } from 'uuid';
 
