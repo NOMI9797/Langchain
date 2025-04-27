@@ -1,7 +1,8 @@
 "use client"
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ChatMessage from '@/components/ChatMessage';
 import ChatInput from '@/components/ChatInput';
+import { formatDate } from '@/utils/helpers';
 
 interface Message {
   content: string;
@@ -9,66 +10,115 @@ interface Message {
   timestamp: string;
 }
 
-const mockHistory = [
-  { id: 1, title: 'Chat with AI', active: true },
-  { id: 2, title: 'Project Ideas', active: false },
-  { id: 3, title: 'Quick Q&A', active: false },
-];
+interface Conversation {
+  _id: string;
+  conversationId: string;
+  updatedAt: string;
+  createdAt: string;
+}
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [history, setHistory] = useState<Conversation[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [activeConversation, setActiveConversation] = useState<string | null>(null);
 
+  // Fetch chat history
+  const fetchHistory = async () => {
+    setHistoryLoading(true);
+    setHistoryError(null);
+    try {
+      const res = await fetch('/api/history');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to fetch history');
+      setHistory(data.conversations || []);
+    } catch (err: any) {
+      setHistoryError(err.message || 'Failed to fetch history');
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  // Fetch messages for a conversation
+  const fetchMessages = async (conversationId: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/history?conversationId=${conversationId}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to fetch messages');
+      setMessages(
+        (data.messages || []).map((msg: any) => ({
+          content: msg.content,
+          isUser: msg.role === 'user',
+          timestamp: msg.timestamp,
+        }))
+      );
+      setActiveConversation(conversationId);
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch messages');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchHistory();
+  }, []);
+
+  // Handle sending a message
   const handleSendMessage = async (message: string) => {
     try {
       setIsLoading(true);
       setError(null);
-      
       const userMessage: Message = {
         content: message,
         isUser: true,
         timestamp: new Date().toISOString(),
       };
       setMessages(prev => [...prev, userMessage]);
-
-      // Format chat history for the API
       const formattedHistory = messages.map(msg => ({
         role: msg.isUser ? 'human' : 'ai',
         content: msg.content
       }));
-
-      console.log('Sending chat history:', formattedHistory);
-
       const response = await fetch('/api/chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           message,
-          chat_history: formattedHistory
+          chat_history: formattedHistory,
+          conversationId: activeConversation,
         }),
       });
-
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Something went wrong');
-      }
-
+      if (!response.ok) throw new Error(data.error || 'Something went wrong');
       const aiMessage: Message = {
         content: data.message,
         isUser: false,
         timestamp: new Date().toISOString(),
       };
       setMessages(prev => [...prev, aiMessage]);
+      // If this was a new conversation, update activeConversation and refresh history
+      if (!activeConversation && data.conversationId) {
+        setActiveConversation(data.conversationId);
+        fetchHistory();
+      } else {
+        fetchHistory(); // Always refresh sidebar after sending
+      }
     } catch (error: any) {
-      console.error('Error sending message:', error);
       setError(error.message || 'Failed to send message. Please try again.');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Handle new chat
+  const handleNewChat = () => {
+    setMessages([]);
+    setActiveConversation(null);
   };
 
   return (
@@ -81,19 +131,30 @@ export default function ChatPage() {
           </div>
           <span className="text-lg font-bold text-white tracking-tight">AI Chat</span>
         </div>
-        <button className="m-4 py-2 px-4 rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold shadow hover:scale-105 transition-transform">+ New Chat</button>
+        <button
+          className="m-4 py-2 px-4 rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold shadow hover:scale-105 transition-transform"
+          onClick={handleNewChat}
+        >
+          + New Chat
+        </button>
         <div className="flex-1 overflow-y-auto px-2">
           <div className="mt-2 flex flex-col gap-1">
-            {mockHistory.map(chat => (
+            {historyLoading && <div className="text-zinc-400 px-4 py-2">Loading...</div>}
+            {historyError && <div className="text-red-400 px-4 py-2">{historyError}</div>}
+            {!historyLoading && !historyError && history.length === 0 && (
+              <div className="text-zinc-400 px-4 py-2">No conversations yet.</div>
+            )}
+            {history.map((chat) => (
               <button
-                key={chat.id}
+                key={chat.conversationId}
                 className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors text-sm mb-1 ${
-                  chat.active
+                  activeConversation === chat.conversationId
                     ? 'bg-zinc-700 text-white shadow'
                     : 'bg-transparent text-zinc-300 hover:bg-zinc-800 hover:text-white'
                 }`}
+                onClick={() => fetchMessages(chat.conversationId)}
               >
-                {chat.title}
+                {formatDate(new Date(chat.updatedAt))}
               </button>
             ))}
           </div>
