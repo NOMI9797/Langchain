@@ -9,8 +9,11 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@huggingface/inference": "^2.8.1",
+    "@langchain/community": "^0.2.15",
     "@langchain/core": "^0.3.49",
     "@langchain/groq": "^0.2.2",
+    "@pinecone-database/pinecone": "^2.2.2",
     "@types/mongodb": "^4.0.6",
     "@types/uuid": "^10.0.0",
     "langchain": "^0.3.24",

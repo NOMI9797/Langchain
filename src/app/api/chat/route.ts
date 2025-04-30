@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { createChain } from '@/lib/langchain/chain';
-import { v4 as uuidv4 } from 'uuid';
+import { createMemory } from '@/lib/langchain/memory';
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
-    const { message, conversationId } = await request.json();
+    const { message, conversationId } = await req.json();
 
     if (!message) {
       return NextResponse.json(
@@ -13,36 +13,28 @@ export async function POST(request: Request) {
       );
     }
 
-    // Use provided conversationId or generate a new one
-    const convoId = conversationId || uuidv4();
-
-    // Create a new chain with memory for this conversation
-    const chain = createChain({
-      conversationId: convoId,
-      returnMessages: true,
+    // Create memory for the conversation
+    const memory = createMemory({
+      conversationId: conversationId || 'default',
+      returnMessages: true
     });
 
-    try {
-      // Call chain with user's input - memory is handled automatically
-      const response = await chain.call({
-        input: message,
-      });
+    // Create chain with memory
+    const chain = await createChain({
+      conversationId: conversationId || 'default',
+      returnSourceDocuments: true
+    });
 
-      return NextResponse.json({
-        message: response.response,
-        conversationId: convoId,
-      });
-    } catch (chainError: any) {
-      console.error('Chain error:', chainError);
-      return NextResponse.json(
-        { error: `Chain error: ${chainError.message || 'Unknown error'}` },
-        { status: 500 }
-      );
-    }
-  } catch (error: any) {
+    // Process the message
+    const response = await chain.call({
+      question: message,
+    });
+
+    return NextResponse.json(response);
+  } catch (error) {
     console.error('Chat API error:', error);
     return NextResponse.json(
-      { error: `API error: ${error.message || 'Unknown error'}` },
+      { error: 'Failed to process message' },
       { status: 500 }
     );
   }

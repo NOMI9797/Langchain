@@ -121,7 +121,7 @@ export default function ChatPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Something went wrong');
       const aiMessage: Message = {
-        content: data.message,
+        content: data.text,
         isUser: false,
         timestamp: new Date().toISOString(),
       };
