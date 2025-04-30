@@ -52,8 +52,16 @@ export async function getConversations() {
   });
 }
 
-export async function getConversationMessages(conversationId: string) {
+export async function getConversationMessages(conversationId: string, skip = 0, limit = 50) {
   const db = await getDb();
-  const convo = await db.collection<ChatConversation>(COLLECTION).findOne({ conversationId });
+  const convo = await db.collection<ChatConversation>(COLLECTION).findOne(
+    { conversationId },
+    { 
+      projection: { 
+        messages: { $slice: [skip, limit] },
+        conversationId: 1
+      } 
+    }
+  );
   return convo?.messages || [];
 } 
