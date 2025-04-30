@@ -6,10 +6,25 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const conversationId = searchParams.get('conversationId');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const skip = (page - 1) * limit;
+
     if (conversationId) {
-      const messages = await getConversationMessages(conversationId);
-      return NextResponse.json({ messages });
+      const messages = await getConversationMessages(conversationId, skip, limit);
+      const total = await getConversationMessageCount(conversationId);
+      
+      return NextResponse.json({ 
+        messages,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit)
+        }
+      });
     }
+    
     const conversations = await getConversations();
     return NextResponse.json({ conversations });
   } catch (error: any) {
@@ -46,4 +61,11 @@ export async function PATCH(request: Request) {
     { $set: { 'messages.0.content': preview } }
   );
   return NextResponse.json({ success: true });
+}
+
+// Helper function to get the total count of messages in a conversation
+async function getConversationMessageCount(conversationId: string): Promise<number> {
+  const db = await getDb();
+  const conversation = await db.collection('chat_conversations').findOne({ conversationId });
+  return conversation?.messages?.length || 0;
 } 
