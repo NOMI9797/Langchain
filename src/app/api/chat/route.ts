@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createChain } from '@/lib/langchain/chain';
 import { createMemory } from '@/lib/langchain/memory';
+import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(req: Request) {
   try {
@@ -13,15 +14,18 @@ export async function POST(req: Request) {
       );
     }
 
+    // Generate a new conversationId if one isn't provided
+    const chatId = conversationId || `chat_${uuidv4()}`;
+
     // Create memory for the conversation
     const memory = createMemory({
-      conversationId: conversationId || 'default',
+      conversationId: chatId,
       returnMessages: true
     });
 
     // Create chain with memory
     const chain = await createChain({
-      conversationId: conversationId || 'default',
+      conversationId: chatId,
       returnSourceDocuments: true
     });
 
@@ -29,8 +33,12 @@ export async function POST(req: Request) {
     const response = await chain.call({
       question: message,
     });
-
-    return NextResponse.json(response);
+    
+    // Add the conversationId to the response so the client can use it for future messages
+    return NextResponse.json({
+      ...response,
+      conversationId: chatId
+    });
   } catch (error) {
     console.error('Chat API error:', error);
     return NextResponse.json(
