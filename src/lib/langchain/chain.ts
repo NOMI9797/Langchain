@@ -4,6 +4,7 @@ import { ChatMemory } from "./memory";
 import { PromptTemplate } from "@langchain/core/prompts";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { HumanMessage } from "@langchain/core/messages";
+import { Document } from "@langchain/core/documents";
 
 interface ChainConfig {
   conversationId: string;
@@ -58,36 +59,49 @@ export const createChain = async (config: ChainConfig) => {
 
   return {
     call: async ({ question }: ChainInput) => {
-      // Get relevant documents
-      const relevantDocs = await retriever.getRelevantDocuments(question);
-      const context = relevantDocs.map(doc => doc.pageContent).join("\n\n");
+      try {
+        // Get relevant documents with fallback for empty vector store
+        let relevantDocs: Document[] = [];
+        let context = "";
+        
+        try {
+          relevantDocs = await retriever.getRelevantDocuments(question);
+          context = relevantDocs.map(doc => doc.pageContent).join("\n\n");
+        } catch (error) {
+          console.log("Vector store retrieval failed, continuing without context:", error);
+          context = "No additional context available.";
+        }
 
-      // Get chat history
-      const history = await memory.loadMemoryVariables();
-      const chatHistory = history.chat_history || "";
+        // Get chat history
+        const history = await memory.loadMemoryVariables();
+        const chatHistory = history.chat_history || "";
 
-      // Format prompt
-      const formattedPrompt = await prompt.format({
-        context,
-        chat_history: chatHistory,
-        question
-      });
+        // Format prompt
+        const formattedPrompt = await prompt.format({
+          context,
+          chat_history: chatHistory,
+          question
+        });
 
-      // Get response from model
-      const messages = [new HumanMessage(formattedPrompt)];
-      const response = await model.call(messages);
-      const result = response.content;
+        // Get response from model
+        const messages = [new HumanMessage(formattedPrompt)];
+        const response = await model.call(messages);
+        const result = response.content;
 
-      // Save to memory with correct output key
-      await memory.saveContext(
-        { input: question },
-        { response: result }  // Changed from output to response to match memory config
-      );
+        // Save to memory with correct output key
+        await memory.saveContext(
+          { input: question },
+          { response: result }  // Changed from output to response to match memory config
+        );
 
-      return {
-        text: result,
-        sourceDocuments: config.returnSourceDocuments ? relevantDocs : undefined
-      };
+        return {
+          text: result,
+          sourceDocuments: config.returnSourceDocuments ? relevantDocs : undefined
+        };
+      } catch (error) {
+        console.error("Chain call error:", error);
+        throw error;
+      }
     }
   };
 }; 
