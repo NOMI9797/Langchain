@@ -5,8 +5,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "AI Chat Application",
-  description: "A modern chat application powered by Groq and LangChain",
+  title: "Chatty - AI Chat Assistant",
+  description: "Meet Chatty, your friendly AI assistant powered by Groq and LangChain",
 };
 
 export default function RootLayout({
