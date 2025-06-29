@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { createChain } from '@/lib/langchain/chain';
-import { createMemory } from '@/lib/langchain/memory';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(req: Request) {
@@ -16,12 +15,6 @@ export async function POST(req: Request) {
 
     // Generate a new conversationId if one isn't provided
     const chatId = conversationId || `chat_${uuidv4()}`;
-
-    // Create memory for the conversation
-    const memory = createMemory({
-      conversationId: chatId,
-      returnMessages: true
-    });
 
     // Create chain with memory
     const chain = await createChain({

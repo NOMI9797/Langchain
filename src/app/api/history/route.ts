@@ -36,10 +36,11 @@ export async function GET(request: Request) {
     
     const conversations = await getConversations();
     return NextResponse.json({ conversations });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('History API error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch chat history.';
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch chat history.' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
@@ -60,10 +61,11 @@ export async function DELETE(request: Request) {
     }
     
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Delete conversation error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to delete conversation.';
     return NextResponse.json(
-      { error: error.message || 'Failed to delete conversation.' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
@@ -111,10 +113,11 @@ export async function PATCH(request: Request) {
     }
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Update conversation error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to update conversation.';
     return NextResponse.json(
-      { error: error.message || 'Failed to update conversation.' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

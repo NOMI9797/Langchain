@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import ChatMessage from '@/components/ChatMessage';
 import ChatInput from '@/components/ChatInput';
-import { formatDate } from '@/utils/helpers';
 import { FaTrash, FaPen } from 'react-icons/fa';
 
 interface Message {
@@ -60,8 +59,9 @@ export default function ChatPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to fetch history');
       setHistory(data.conversations || []);
-    } catch (err: any) {
-      setHistoryError(err.message || 'Failed to fetch history');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch history';
+      setHistoryError(errorMessage);
     } finally {
       setHistoryLoading(false);
     }
@@ -76,15 +76,16 @@ export default function ChatPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to fetch messages');
       setMessages(
-        (data.messages || []).map((msg: any) => ({
+        (data.messages || []).map((msg: { content: string; role: string; timestamp: string }) => ({
           content: msg.content,
           isUser: msg.role === 'user',
           timestamp: msg.timestamp,
         }))
       );
       setActiveConversation(conversationId);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch messages');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch messages';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -105,10 +106,7 @@ export default function ChatPage() {
         timestamp: new Date().toISOString(),
       };
       setMessages(prev => [...prev, userMessage]);
-      const formattedHistory = messages.map(msg => ({
-        role: msg.isUser ? 'human' : 'ai',
-        content: msg.content
-      }));
+      
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -132,8 +130,9 @@ export default function ChatPage() {
       } else {
         fetchHistory(); // Always refresh sidebar after sending
       }
-    } catch (error: any) {
-      setError(error.message || 'Failed to send message. Please try again.');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send message. Please try again.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

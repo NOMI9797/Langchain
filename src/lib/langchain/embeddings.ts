@@ -1,15 +1,23 @@
 import { Embeddings } from "@langchain/core/embeddings";
-import { pipeline } from "@xenova/transformers";
+import { pipeline, Pipeline } from "@xenova/transformers";
+
+interface FeatureExtractionOutput {
+  data: Float32Array;
+}
+
+interface FeatureExtractionPipeline extends Pipeline {
+  (text: string, options?: { pooling?: string; normalize?: boolean }): Promise<FeatureExtractionOutput>;
+}
 
 // Local embeddings using Xenova transformers - no API keys required!
 class LocalEmbeddings extends Embeddings {
-  private model: any = null;
+  private model: FeatureExtractionPipeline | null = null;
 
   constructor() {
     super({});
   }
 
-  async initModel() {
+  async initModel(): Promise<FeatureExtractionPipeline> {
     if (!this.model) {
       this.model = await pipeline(
         'feature-extraction',
@@ -18,7 +26,7 @@ class LocalEmbeddings extends Embeddings {
           quantized: false,
           progress_callback: undefined // Disable progress logs
         }
-      );
+      ) as FeatureExtractionPipeline;
     }
     return this.model;
   }

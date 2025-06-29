@@ -2,7 +2,6 @@ import { ChatGroq } from "@langchain/groq";
 import { createVectorStore } from "./vectorStore";
 import { ChatMemory } from "./memory";
 import { PromptTemplate } from "@langchain/core/prompts";
-import { StringOutputParser } from "@langchain/core/output_parsers";
 import { HumanMessage } from "@langchain/core/messages";
 import { Document } from "@langchain/core/documents";
 

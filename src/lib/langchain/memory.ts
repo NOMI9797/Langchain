@@ -1,7 +1,7 @@
 import { BufferMemory } from 'langchain/memory';
 import { getDb } from '../db/mongodb';
 import { ChatMessage } from '../db/chatHistory';
-import { BaseMemory, InputValues } from '@langchain/core/memory';
+import { InputValues } from '@langchain/core/memory';
 
 export interface MemoryConfig {
   conversationId: string;
@@ -42,7 +42,7 @@ export class ChatMemory extends BufferMemory {
 
   async saveContext(
     inputValues: InputValues,
-    outputValues: Record<string, any>
+    outputValues: Record<string, unknown>
   ): Promise<void> {
     await super.saveContext(inputValues, outputValues);
     
